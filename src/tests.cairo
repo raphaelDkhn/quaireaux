@@ -10,6 +10,7 @@ mod karatsuba_test;
 mod queue_test;
 mod stack_test;
 mod mergesort_test;
+mod heap_test;
 //mod perfect_number_test;
 
 mod perfect_number_test;

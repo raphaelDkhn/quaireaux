@@ -4,3 +4,5 @@ mod merkle_tree;
 mod queue;
 // Stack module
 mod stack;
+// Heap module
+mod heap;
