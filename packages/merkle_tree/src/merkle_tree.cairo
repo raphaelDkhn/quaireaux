@@ -176,19 +176,26 @@ pub impl MerkleTreeImpl<T, +HasherTrait<T>, +Copy<T>, +Drop<T>> of MerkleTreeTra
 fn compute_proof<T, +HasherTrait<T>, +Drop<T>>(
     mut nodes: Array<felt252>, mut hasher: T, index: u32, ref proof: Array<felt252>
 ) {
-    if index % 2 == 0 {
-        proof.append(*nodes.at(index + 1));
-    } else {
-        proof.append(*nodes.at(index - 1));
-    }
-
-    // Break if we have reached the top of the tree (next_level would be root)
-    if nodes.len() == 2 {
+    // Base case: Only one node left, it's the root.
+    if nodes.len() == 1 {
         return;
     }
-    // Compute next level
+
+    let pair_index = if index % 2 == 0 {
+        index + 1
+    } else {
+        index - 1
+    };
+
+    // Safety check to ensure pair_index is within bounds
+    if pair_index < nodes.len() {
+        proof.append(*nodes.at(pair_index));
+    }
+
+    // Prepare for next level of recursion
     let next_level: Array<felt252> = get_next_level(nodes.span(), ref hasher);
 
+    // Recurse with half the index because we're moving up the tree
     compute_proof(next_level, hasher, index / 2, ref proof)
 }
 
@@ -205,22 +212,23 @@ fn get_next_level<T, +HasherTrait<T>, +Drop<T>>(
     let mut next_level: Array<felt252> = array![];
     let mut is_odd = false;
 
-    while let Option::Some(left) = nodes.pop_front() {
-        let right = match nodes.pop_front() {
-            Option::Some(r) => *r,
-            Option::None => {
-                // If we have an odd number of nodes, duplicate the last one.
-                is_odd = true;
-                *left
-            }
+    while let Option::Some(left) = nodes
+        .pop_front() {
+            let right = match nodes.pop_front() {
+                Option::Some(r) => *r,
+                Option::None => {
+                    // If we have an odd number of nodes, duplicate the last one.
+                    is_odd = true;
+                    *left
+                }
+            };
+            let node = if Into::<felt252, u256>::into(*left) < right.into() {
+                hasher.hash(*left, right)
+            } else {
+                hasher.hash(right, *left)
+            };
+            next_level.append(node);
         };
-        let node = if Into::<felt252, u256>::into(*left) < right.into() {
-            hasher.hash(*left, right)
-        } else {
-            hasher.hash(right, *left)
-        };
-        next_level.append(node);
-    };
 
     // If the input was odd, we need to duplicate the last node of next_level.
     if is_odd {
