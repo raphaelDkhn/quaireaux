@@ -71,7 +71,7 @@ pub mod poseidon {
 
 #[derive(Drop)]
 pub struct MerkleTree<T> {
-    hasher: T
+    pub hasher: T
 }
 
 /// MerkleTree trait.
