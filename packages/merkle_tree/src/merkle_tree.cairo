@@ -176,30 +176,23 @@ pub impl MerkleTreeImpl<T, +HasherTrait<T>, +Copy<T>, +Drop<T>> of MerkleTreeTra
 fn compute_proof<T, +HasherTrait<T>, +Drop<T>>(
     mut nodes: Array<felt252>, mut hasher: T, index: u32, ref proof: Array<felt252>
 ) {
-    // If we reach the top of the tree
-    if nodes.len() <= 1 {
+    // Base case: stop when one node is left
+    if nodes.len() == 1 {
         return;
     }
 
-    // Calculate the sibling index
-    let sibling_index = if index % 2 == 0 {
-        index + 1
-    } else {
-        index - 1
-    };
+    // Calculate sibling index
+    let sibling_index = if index % 2 == 0 { index + 1 } else { index - 1 };
 
-    // Ensure sibling_index is within the current level's bounds
     if sibling_index < nodes.len() {
         proof.append(*nodes.at(sibling_index));
     } else {
-        // Handle cases where the sibling index might be out of bounds (usually won't happen in a well-formed call)
+        // If out of bounds, handle error or adjust logic
         return;
     }
 
-    // Create the next level of the tree
+    // Recursively compute the next level
     let next_level = get_next_level(nodes.span(), ref hasher);
-
-    // Continue to the next level with the updated index
     compute_proof(next_level, hasher, index / 2, ref proof);
 }
 
