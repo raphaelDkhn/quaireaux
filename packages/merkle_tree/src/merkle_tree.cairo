@@ -204,7 +204,7 @@ fn get_next_level<T, +HasherTrait<T>, +Drop<T>>(
     let mut next_level: Array<felt252> = array![];
     while let Option::Some(left) = nodes
         .pop_front() {
-            let right = *nodes.pop_front().expect('Index out of bounds');
+            let right = *nodes.pop_front().expect('Index out of bounds yoo');
             let node = if Into::<felt252, u256>::into(*left) < right.into() {
                 hasher.hash(*left, right)
             } else {
