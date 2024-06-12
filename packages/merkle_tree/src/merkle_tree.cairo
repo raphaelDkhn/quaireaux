@@ -71,7 +71,7 @@ pub mod poseidon {
 
 #[derive(Drop)]
 pub struct MerkleTree<T> {
-    pub hasher: T
+   pub hasher: T
 }
 
 /// MerkleTree trait.
@@ -176,28 +176,23 @@ pub impl MerkleTreeImpl<T, +HasherTrait<T>, +Copy<T>, +Drop<T>> of MerkleTreeTra
 fn compute_proof<T, +HasherTrait<T>, +Drop<T>>(
     mut nodes: Array<felt252>, mut hasher: T, index: u32, ref proof: Array<felt252>
 ) {
-    // Base case: stop when one node is left
-    if nodes.len() == 1 {
-        return;
-    }
-
-    // Calculate sibling index
-    let sibling_index = if index % 2 == 0 { index + 1 } else { index - 1 };
-
-    if sibling_index < nodes.len() {
-        proof.append(*nodes.at(sibling_index));
+    if index % 2 == 0 {
+        proof.append(*nodes.at(index + 1));
     } else {
-        // If out of bounds, handle error or adjust logic
-        return;
+        proof.append(*nodes.at(index - 1));
     }
 
-    // Recursively compute the next level
-    let next_level = get_next_level(nodes.span(), ref hasher);
-    compute_proof(next_level, hasher, index / 2, ref proof);
+    // Break if we have reached the top of the tree (next_level would be root)
+    if nodes.len() == 2 {
+        return;
+    }
+    // Compute next level
+    let next_level: Array<felt252> = get_next_level(nodes.span(), ref hasher);
+
+    compute_proof(next_level, hasher, index / 2, ref proof)
 }
 
 /// Helper function to compute the next layer of a merkle tree providing a layer of nodes.
-/// Handles both even and odd-length inputs by duplicating the last element if the input is odd.
 /// # Arguments
 /// * `nodes` - The sorted nodes.
 /// * `hasher` - The hasher to use.
@@ -206,31 +201,16 @@ fn compute_proof<T, +HasherTrait<T>, +Drop<T>>(
 fn get_next_level<T, +HasherTrait<T>, +Drop<T>>(
     mut nodes: Span<felt252>, ref hasher: T
 ) -> Array<felt252> {
-    let mut next_level = ArrayTrait::new();
-    let mut i = 0;
-
-    while i < nodes
-        .len() {
-            let left = nodes.at(i);
-            let right = if i + 1 < nodes.len() {
-                nodes.at(i + 1)
+    let mut next_level: Array<felt252> = array![];
+    while let Option::Some(left) = nodes
+        .pop_front() {
+            let right = *nodes.pop_front().expect('Index out of bounds');
+            let node = if Into::<felt252, u256>::into(*left) < right.into() {
+                hasher.hash(*left, right)
             } else {
-                left
-            }; // Use the same left node if no right node exists
-
-            let hashed = if Into::<
-                felt252, u256
-                >::into(*left) < Into::<
-                felt252, u256
-            >::into(*right) {
-                hasher.hash(*left, *right)
-            } else {
-                hasher.hash(*right, *left)
+                hasher.hash(right, *left)
             };
-
-            next_level.append(hashed);
-            i += 2; // Move to the next pair
+            next_level.append(node);
         };
-
     next_level
 }
