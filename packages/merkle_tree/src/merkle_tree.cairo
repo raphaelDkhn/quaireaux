@@ -1,3 +1,4 @@
+use core::array::ArrayTrait;
 //! MerkleTree implementation.
 //!
 //! # Examples
@@ -71,7 +72,7 @@ pub mod poseidon {
 
 #[derive(Drop)]
 pub struct MerkleTree<T> {
-   pub hasher: T
+    pub hasher: T
 }
 
 /// MerkleTree trait.
@@ -176,6 +177,10 @@ pub impl MerkleTreeImpl<T, +HasherTrait<T>, +Copy<T>, +Drop<T>> of MerkleTreeTra
 fn compute_proof<T, +HasherTrait<T>, +Drop<T>>(
     mut nodes: Array<felt252>, mut hasher: T, index: u32, ref proof: Array<felt252>
 ) {
+    if nodes.len() % 2 != 0 {
+        nodes.append(0);
+    }
+
     if index % 2 == 0 {
         proof.append(*nodes.at(index + 1));
     } else {
